@@ -11,11 +11,13 @@ public class Display {
   public static void main(String[] args) {
     System.out.println("Bonjour bienvenue dans la classe pour créer un ecran pixelisé en java dans le terminal.");
     Display display = new Display(10, 10, new Color(0, 0, 0));
-    display.setPixel(1, 1, new Color(0, 63, 255));
-    display.setPixel(2, 1, new Color(255, 0, 0));
-    display.setPixel(3, 1, new Color(0, 255, 0));
-    display.setPixel(2, 2, new Color(255, 255, 0));
+    display.setPixel(0, 0, new Color(0, 63, 255));
+    display.setPixel(1, 0, new Color(255, 0, 0));
+    display.setPixel(2, 0, new Color(0, 255, 0));
+    display.setPixel(1, 1, new Color(255, 255, 0));
     display.setPixel(3, 3, new Color(255, 0, 255));
+
+    System.out.println("\033[0m");
   }
 
   public Display(int nwidth, int nheight, Color background) {
@@ -31,11 +33,15 @@ public class Display {
   }
 
   public void setPixel(int x, int y, Color color) {
+    if (0 > y | y >= height | x < 0 | x > width) {
+      return;
+    }
+    screenBuffer[y][x] = color;
     int row = y/2;
     System.out.printf("\n%d", row);
-    int colorPad = 38;
+    int colorPad = 48;
     if (y % 2 == 0) {
-      colorPad = 48;
+      colorPad = 38;
     }
     System.out.printf("\033[%d;%dH\033[%d;2;%d;%d;%dm%c", row + 1, x + 1, colorPad, color.r, color.g, color.b, PIXELCHAR);
     try {
@@ -43,5 +49,9 @@ public class Display {
     } catch (Exception e) {
       System.out.println(e);
     }
+  }
+
+  public void update() {
+    
   }
 }
