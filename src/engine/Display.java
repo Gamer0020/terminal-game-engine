@@ -1,7 +1,9 @@
 package engine;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.ArrayList;
+import java.util.Iterator;
 import engine.util.Color;
 import engine.util.Pixel;
 
@@ -11,7 +13,7 @@ public class Display {
   private int height;
   private final int PIXELCHAR = 9600;
   private Color[][] screenBuffer;
-  private ArrayList<Pixel> screenChanges;
+  private List<Pixel> screenChanges;
 
   private Color mainColor;
   private Color backgroundColor;
@@ -67,7 +69,7 @@ public class Display {
     if (0 > y | y >= height | x < 0 | x >= width) {
       return;
     }
-    screenChanges.add(new Pixel(x, y, color));
+    screenChanges.add(0, new Pixel(x, y, color));
   }
 
 
@@ -79,11 +81,20 @@ public class Display {
     });
     
     for (Pixel element: screenChanges) {
-      System.out.println("(" + element.x.toString() + element.y.toString() + "(" + element.color.r.toString() + element.color.g.toString() + element.color.b.toString() + "))");
-    };
-    System.out.println(screenChanges);
+      //System.out.printf("(%d, %d, (%d, %d, %d))\n", element.x, element.y, element.color.r, element.color.g, element.color.b);
+      screenBuffer[element.y][element.x] = element.color;
+    }
   }
 
   public void pixelPrint() {
+    Iterator<Pixel> pixelIterator = screenChanges.iterator();
+    List<int[]> screenChanged = new ArrayList<>();
+
+    while (pixelIterator.hasNext()) {
+      Pixel pixel = pixelIterator.next();
+      if (screenChanged.contains(pixelIterator)) continue;
+      Pixel pixel2 = new Pixel(pixel.x, pixel.y+1, screenBuffer[pixel.y+1][pixel.x]);
+
+    }
   }
 }
