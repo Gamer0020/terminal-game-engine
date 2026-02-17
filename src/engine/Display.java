@@ -1,7 +1,10 @@
 package engine;
+
+import java.util.Collections;
+import java.util.ArrayList;
 import engine.util.Color;
 import engine.util.Pixel;
-import java.util.ArrayList;
+
 
 public class Display {
   private int width;
@@ -70,8 +73,17 @@ public class Display {
 
   public void update() {
     //le but la c’est de faire le moins de print possible.
-    System.out.print("\033[38;2;255;0;0m");
-    System.out.printf("%c%c%c%c\n",PIXELCHAR, PIXELCHAR, PIXELCHAR, PIXELCHAR);
-    System.out.printf("%c%c%c%c\n",PIXELCHAR, PIXELCHAR, PIXELCHAR, PIXELCHAR);
+    Collections.sort(screenChanges, (a, b)-> {
+      if (a.y == b.y) return a.x - b.x;
+      return a.y - b.y;
+    });
+    
+    for (Pixel element: screenChanges) {
+      System.out.println("(" + element.x.toString() + element.y.toString() + "(" + element.color.r.toString() + element.color.g.toString() + element.color.b.toString() + "))");
+    };
+    System.out.println(screenChanges);
+  }
+
+  public void pixelPrint() {
   }
 }
