@@ -1,9 +1,7 @@
 package engine;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
+import java.util.stream.Collectors;
 import engine.util.Color;
 import engine.util.Pixel;
 
@@ -26,8 +24,12 @@ public class Display {
     display.clear();
     for (int i = 0; i < 50; i++) {
       for (int j = 0; j < 50; j++) {
-        display.setPixel(j, i, new Color(255, i*10, j * 10));
+        //display.setPixel(j, i, new Color(255, i*10, j * 10));
       }
+    }
+
+    for (int i = 0; i < 20; i++) {
+      display.setPixel(10, 10+i, new Color(0, 255, 255));
     }
     display.update();
     reset(true);
@@ -75,26 +77,32 @@ public class Display {
 
   public void update() {
     //le but la c’est de faire le moins de print possible.
+    screenChanges = screenChanges.stream().distinct().collect(Collectors.toList());
+
     Collections.sort(screenChanges, (a, b)-> {
       if (a.y == b.y) return a.x - b.x;
       return a.y - b.y;
     });
-    
-    for (Pixel element: screenChanges) {
-      //System.out.printf("(%d, %d, (%d, %d, %d))\n", element.x, element.y, element.color.r, element.color.g, element.color.b);
-      screenBuffer[element.y][element.x] = element.color;
-    }
+
+    //after this we assume that the screenChanges is sorted and without duplicates.
+    pixelPrint();
+    screenChanges.clear();
   }
 
   public void pixelPrint() {
-    Iterator<Pixel> pixelIterator = screenChanges.iterator();
-    List<int[]> screenChanged = new ArrayList<>();
+    Iterator<Pixel> pixelProcessor = screenChanges.listIterator();
+    while (pixelProcessor.hasNext()) {
+      Pixel pixel = pixelProcessor.next();
+      Optional<Pixel> otherPixelTest;
 
-    while (pixelIterator.hasNext()) {
-      Pixel pixel = pixelIterator.next();
-      if (screenChanged.contains(pixelIterator)) continue;
-      Pixel pixel2 = new Pixel(pixel.x, pixel.y+1, screenBuffer[pixel.y+1][pixel.x]);
+      //Donc la on va venir tester si le pixel est celui du haut pour apres venir chercher celui du bas. On part du principe que on va pas chercher celui pour un pixel du bas parce qu’il aura deja ete processed par son ami du haut.
+      boolean topPixel = true;
+      if (pixel.y % 2 == 0) { topPixel = false; }
 
+      if (topPixel == true) {
+        otherPixelTest = screenChanges.stream().filter(p -> (p.y == pixel.y+1)).findFirst();
+      }
+      Pixel otherPixel;
     }
   }
 }
