@@ -14,7 +14,7 @@ public class Pixel {
   }
 
   public static String printString(Pixel a, Pixel b) { //Retourne la string à print pour le charactère des deux pixels.
-    return String.format("\033[%d;%dH\033[38;2;%d;%d;%dm\033[48;2;%d;%d;%dm%c",a.x, (b.y + 1)/2, a.color.r, a.color.g, a.color.b, b.color.r, b.color.g, b.color.b, PIXELCHAR);
+    return String.format("\033[%d;%dH\033[38;2;%d;%d;%dm\033[48;2;%d;%d;%dm%c", (b.y + 1)/2, a.x, a.color.r, a.color.g, a.color.b, b.color.r, b.color.g, b.color.b, PIXELCHAR);
   }
 
   @Override

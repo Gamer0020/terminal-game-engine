@@ -29,7 +29,10 @@ public class Display {
     }
 
     for (int i = 0; i < 20; i++) {
-      display.setPixel(10, 10+i, new Color(0, 255, 255));
+      display.setPixel(10, 10+i, Color.TURQUOISE);
+      display.setPixel(10+i, 10, Color.RED);
+      //display.setPixel(29-i, 29, Color.RED);
+      //display.setPixel(29, 29-i, Color.TURQUOISE);
     }
     display.update();
     reset(true);
@@ -77,12 +80,20 @@ public class Display {
 
   public void update() {
     //le but la c’est de faire le moins de print possible.
-    screenChanges = screenChanges.stream().distinct().collect(Collectors.toList());
 
     Collections.sort(screenChanges, (a, b)-> {
       if (a.y == b.y) return a.x - b.x;
       return a.y - b.y;
     });
+
+    for (int i = 0; i < screenChanges.size(); i++) {
+      if (i+1<screenChanges.size() && screenChanges.get(i).equals(screenChanges.get(i+1))) {
+        System.out.println("Found duplicate");
+        System.out.println(screenChanges.get(i));
+        screenChanges.remove(i);
+        i--;
+      }
+    }
 
     //after this we assume that the screenChanges is sorted and without duplicates.
     pixelPrint();
@@ -90,19 +101,36 @@ public class Display {
   }
 
   public void pixelPrint() {
-    Iterator<Pixel> pixelProcessor = screenChanges.listIterator();
-    while (pixelProcessor.hasNext()) {
-      Pixel pixel = pixelProcessor.next();
-      Optional<Pixel> otherPixelTest;
+    for (int i = 0; i < screenChanges.size(); i++) {
+      Pixel pixel = screenChanges.get(i);
+
+      Optional<Pixel> otherPixelTest = Optional.empty();
 
       //Donc la on va venir tester si le pixel est celui du haut pour apres venir chercher celui du bas. On part du principe que on va pas chercher celui pour un pixel du bas parce qu’il aura deja ete processed par son ami du haut.
-      boolean topPixel = true;
-      if (pixel.y % 2 == 0) { topPixel = false; }
-
+      //
+      //Meme si la commande pour display commence sur 1, on va rester sur 0 jusqu’a la toute fin. Donc le pixel du haut est paire.
+      boolean topPixel = false;
+      if (pixel.y % 2 == 0) { topPixel = true; }
+       
       if (topPixel == true) {
         otherPixelTest = screenChanges.stream().filter(p -> (p.y == pixel.y+1)).findFirst();
       }
+
       Pixel otherPixel;
+      if (otherPixelTest.isPresent()) {
+        otherPixel = otherPixelTest.get();
+        screenChanges.remove(screenChanges.indexOf(otherPixel));
+      } else if (topPixel) {
+        otherPixel = new Pixel(pixel.x, pixel.y+1, screenBuffer[pixel.y+1][pixel.x]);
+      } else {
+        otherPixel = new Pixel(pixel.x, pixel.y-1, screenBuffer[pixel.y-1][pixel.x]);
+      }
+      //System.out.println("Pixel: " + pixel + " Other Pixel: " + otherPixel);
+      if (topPixel) {
+        System.out.print(Pixel.printString(pixel, otherPixel));
+      } else {
+        System.out.print(Pixel.printString(otherPixel, pixel));
+      }
     }
   }
 }
