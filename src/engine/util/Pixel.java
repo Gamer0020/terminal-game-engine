@@ -1,8 +1,8 @@
 package engine.util;
 
 public class Pixel {
-  public int x;
-  public int y;
+  public final  int x;
+  public final int y;
   public Color color;
 
   public static final char PIXELCHAR = 9600;
@@ -29,5 +29,13 @@ public class Pixel {
   @Override
   public String toString() {
     return String.format("Pixel(%d, %d, (%d, %d, %d))", x, y, color.r, color.g, color.b);
+  }
+
+  public int getX() {
+    return x;
+  }
+
+  public int getY() {
+    return y;
   }
 }

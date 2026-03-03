@@ -24,18 +24,19 @@ public class Display {
     display.clear();
     for (int i = 0; i < 50; i++) {
       for (int j = 0; j < 50; j++) {
-        //display.setPixel(j, i, new Color(255, i*10, j * 10));
+        display.setPixel(j, i, new Color(255, i*5, j * 5));
       }
     }
 
     for (int i = 0; i < 20; i++) {
-      display.setPixel(10, 10+i, Color.TURQUOISE);
-      display.setPixel(10+i, 10, Color.RED);
-      //display.setPixel(29-i, 29, Color.RED);
-      //display.setPixel(29, 29-i, Color.TURQUOISE);
+      //display.setPixel(10, 10+i, Color.RED);
+      //display.setPixel(10+i, 29, Color.BLUE);
+      //display.setPixel(29, 29-i, Color.YELLOW);
+      //display.setPixel(29-i, 10, Color.GREEN);
     }
     display.update();
     reset(true);
+    System.out.println("\nEnd of program...");
   }
 
 
@@ -74,27 +75,31 @@ public class Display {
     if (0 > y | y >= height | x < 0 | x >= width) {
       return;
     }
-    screenChanges.add(0, new Pixel(x, y, color));
+    screenChanges.add(new Pixel(x, y, color));
   }
 
 
   public void update() {
     //le but la c’est de faire le moins de print possible.
 
-    Collections.sort(screenChanges, (a, b)-> {
-      if (a.y == b.y) return a.x - b.x;
-      return a.y - b.y;
-    });
+    //Sort the list
+    screenChanges.sort(
+        Comparator.comparingInt(Pixel::getY)
+        .thenComparingInt(Pixel::getX)
+        );
 
+    //Removing duplicates
     for (int i = 0; i < screenChanges.size(); i++) {
       if (i+1<screenChanges.size() && screenChanges.get(i).equals(screenChanges.get(i+1))) {
-        System.out.println("Found duplicate");
-        System.out.println(screenChanges.get(i));
+        System.out.println("Found duplicate " + screenChanges.get(i) + ". It duplicates " + screenChanges.get(i+1));
         screenChanges.remove(i);
         i--;
       }
     }
 
+    for (Pixel pixel : screenChanges) {
+      screenBuffer[pixel.y][pixel.x] = pixel.color;
+    }
     //after this we assume that the screenChanges is sorted and without duplicates.
     pixelPrint();
     screenChanges.clear();
@@ -113,7 +118,7 @@ public class Display {
       if (pixel.y % 2 == 0) { topPixel = true; }
        
       if (topPixel == true) {
-        otherPixelTest = screenChanges.stream().filter(p -> (p.y == pixel.y+1)).findFirst();
+        otherPixelTest = screenChanges.stream().filter(p -> (p.y == pixel.y+1)&&(p.x == pixel.x)).findFirst();
       }
 
       Pixel otherPixel;
@@ -125,7 +130,7 @@ public class Display {
       } else {
         otherPixel = new Pixel(pixel.x, pixel.y-1, screenBuffer[pixel.y-1][pixel.x]);
       }
-      //System.out.println("Pixel: " + pixel + " Other Pixel: " + otherPixel);
+      
       if (topPixel) {
         System.out.print(Pixel.printString(pixel, otherPixel));
       } else {
