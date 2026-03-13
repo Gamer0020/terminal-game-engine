@@ -19,24 +19,47 @@ public class Display {
 
   public static void main(String[] args) {
     System.out.println("Bonjour bienvenue dans la classe pour créer un ecran pixelisé en java dans le terminal.");
-    System.out.print("\033[?25l");
-    Display display = new Display(50, 50, new Color(0, 0, 0)); //don’t put an odd length
-    display.clear();
-    for (int i = 0; i < 50; i++) {
-      for (int j = 0; j < 50; j++) {
-        display.setPixel(j, i, new Color(255, i*5, j * 5));
-      }
-    }
+    Display display = new Display(100, 100, new Color(0, 0, 0)); //don’t put an odd length
+    
+    int x = 0;
+    int y = 0;
+    int vx = 1;
+    int vy = 2;
 
-    for (int i = 0; i < 20; i++) {
-      //display.setPixel(10, 10+i, Color.RED);
-      //display.setPixel(10+i, 29, Color.BLUE);
-      //display.setPixel(29, 29-i, Color.YELLOW);
-      //display.setPixel(29-i, 10, Color.GREEN);
+    for (int k = 0; k < 1000; k++) {
+      long currentTime = System.currentTimeMillis();
+
+      for (int i = 0; i < 50; i++) {
+        for (int j = 0; j < 50; j++) {
+          //display.setPixel(j, i, new Color(k % 256, 255, 0));
+        }
+      }
+
+      if (x + vx >= display.width || x + vx < 0) vx *= -1;
+      if (y + vy >= display.height || y + vy < 0) vy *= -1;
+
+      x += vx;
+      y += vy;
+
+      display.clear();
+      display.setPixel(x, y, Color.red);
+      display.update();
+      long timeTaken = System.currentTimeMillis()- currentTime;
+      if (timeTaken < 16) {
+        try {
+          Thread.sleep(16-timeTaken);
+        } catch (Exception e) {}
+      }
+      timeTaken = System.currentTimeMillis()-currentTime;
+      long FPS;
+      try {
+        FPS = 1000/timeTaken;
+      } catch (ArithmeticException e) {
+        FPS = 1000;
+      }
+      System.out.println("\033[" + display.height + ";1H" + Color.getColorChangeString(Color.white, Color.black) + "Time taken: " + timeTaken + ". FPS : " + FPS);
     }
-    display.update();
     reset(true);
-    System.out.println("\nEnd of program...");
   }
 
 
@@ -46,12 +69,9 @@ public class Display {
     defaultBackgroundColor = background;
     screenBuffer = new Color[height][width];
     screenChanges = new ArrayList<Pixel>();
-    for (int i = 0; i < height; i++) {
-      for (int j = 0; j < width; j++) {
-        screenBuffer[i][j] = background;
-      }
-    }
 
+    clear();
+    System.out.print("\033[?25l");
     reset();
   }
 
@@ -67,7 +87,12 @@ public class Display {
   }
 
   public void clear() {
-    System.out.print("\033[0H\033[2J");
+    System.out.print("\033c");
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        screenBuffer[i][j] = defaultBackgroundColor;
+      }
+    }
   }
 
 
@@ -78,64 +103,99 @@ public class Display {
     screenChanges.add(new Pixel(x, y, color));
   }
 
+  private void sortList(List<Pixel> list) {
 
-  public void update() {
-    //le but la c’est de faire le moins de print possible.
-
-    //Sort the list
-    screenChanges.sort(
+    //Sorting the list
+    list.sort(
         Comparator.comparingInt(Pixel::getY)
         .thenComparingInt(Pixel::getX)
         );
 
     //Removing duplicates
-    for (int i = 0; i < screenChanges.size(); i++) {
-      if (i+1<screenChanges.size() && screenChanges.get(i).equals(screenChanges.get(i+1))) {
-        System.out.println("Found duplicate " + screenChanges.get(i) + ". It duplicates " + screenChanges.get(i+1));
-        screenChanges.remove(i);
+    for (int i = 0; i < list.size(); i++) {
+      if (i+1 < list.size() && list.get(i).equals(screenChanges.get(i+1))) {
+        
+        list.remove(i);
         i--;
       }
     }
+  }
 
+
+  public void update() {
+    //le but la c’est de faire le moins de print possible
+
+    sortList(screenChanges);
     for (Pixel pixel : screenChanges) {
       screenBuffer[pixel.y][pixel.x] = pixel.color;
     }
     //after this we assume that the screenChanges is sorted and without duplicates.
-    pixelPrint();
+
+    System.out.print("\033[1;1H" + Color.getColorChangeString(defaultBackgroundColor, defaultBackgroundColor));
+
+    if (screenChanges.size() < 100) {
+      pixelPrint();
+    } else if (false){
+      linePrint();
+    } else {
+      screenPrint();
+    }
     screenChanges.clear();
+    reset();
   }
 
-  public void pixelPrint() {
+  private void pixelPrint() {
     for (int i = 0; i < screenChanges.size(); i++) {
       Pixel pixel = screenChanges.get(i);
-
-      Optional<Pixel> otherPixelTest = Optional.empty();
 
       //Donc la on va venir tester si le pixel est celui du haut pour apres venir chercher celui du bas. On part du principe que on va pas chercher celui pour un pixel du bas parce qu’il aura deja ete processed par son ami du haut.
       //
       //Meme si la commande pour display commence sur 1, on va rester sur 0 jusqu’a la toute fin. Donc le pixel du haut est paire.
-      boolean topPixel = false;
-      if (pixel.y % 2 == 0) { topPixel = true; }
-       
-      if (topPixel == true) {
-        otherPixelTest = screenChanges.stream().filter(p -> (p.y == pixel.y+1)&&(p.x == pixel.x)).findFirst();
-      }
+      Pixel otherPixel = pixel.getOtherPixel(screenChanges, screenBuffer);
+      if (otherPixel.color.equals(Color.red)) System.err.println("\033[0mNot normal");
 
-      Pixel otherPixel;
-      if (otherPixelTest.isPresent()) {
-        otherPixel = otherPixelTest.get();
-        screenChanges.remove(screenChanges.indexOf(otherPixel));
-      } else if (topPixel) {
-        otherPixel = new Pixel(pixel.x, pixel.y+1, screenBuffer[pixel.y+1][pixel.x]);
-      } else {
-        otherPixel = new Pixel(pixel.x, pixel.y-1, screenBuffer[pixel.y-1][pixel.x]);
-      }
-      
-      if (topPixel) {
-        System.out.print(Pixel.printString(pixel, otherPixel));
-      } else {
-        System.out.print(Pixel.printString(otherPixel, pixel));
-      }
+      System.out.print(Pixel.getPrintString(pixel, otherPixel));
     }
+  }
+
+  private void linePrint() {
+    for (int y = 0; y < height; y+=2) {
+      String line = getLine(y);
+      System.out.println(line);
+    //System.out.println("Lineprint function...");
+    }
+  }
+
+
+  private String getLine(int y) {
+    Color topColor = new Color(defaultBackgroundColor);
+    Color bottomColor = new Color(defaultBackgroundColor);
+    String line = "";
+    for (int x = 0; x < width; x++) {
+			Color topPixel = screenBuffer[y][x];
+			Color bottomPixel = y + 1 < height ? screenBuffer[y+1][x] : defaultBackgroundColor;
+			if (!(topPixel.equals(topColor) && bottomPixel.equals(bottomColor))) {
+				topColor.set(topPixel);
+				bottomColor.set(bottomPixel);
+        //System.out.printf("(%d, %d, %d)", topColor.r, topColor.g, topColor.b);
+        try {
+          //Thread.sleep(100);
+        } catch (Exception e) {}
+				line += Color.getColorChangeString(topPixel, bottomPixel);
+			}
+			line += Character.toString(PIXELCHAR);
+    }
+
+    return line;
+  }
+
+  private void screenPrint() {
+    String stringToPrint = "";
+    for (int y = 0; y < height; y+=2) {
+      stringToPrint += getLine(y);
+      stringToPrint += "\n";
+    }
+    System.out.println(stringToPrint);
+    //System.out.println("Printing using the screenPrint function...");
   }
 }
